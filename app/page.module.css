@@ -1,0 +1,220 @@
+.shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 42px 0 56px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.editor h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.hero h1 {
+  max-width: 720px;
+  font-size: clamp(34px, 5vw, 66px);
+  line-height: 0.98;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.previewPanel {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.08);
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: var(--paper);
+}
+
+.editor {
+  position: sticky;
+  top: 24px;
+  padding: 22px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.editorHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.editor h2 {
+  font-size: 24px;
+}
+
+.uploadButton,
+.downloadButton {
+  border: 1px solid #111111;
+  border-radius: 999px;
+  background: #111111;
+  color: #ffffff;
+  font-weight: 650;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.uploadButton {
+  flex: 0 0 auto;
+  padding: 14px 20px;
+}
+
+.downloadButton {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.uploadButton:hover,
+.downloadButton:hover {
+  transform: translateY(-1px);
+  background: #ffffff;
+  color: #111111;
+}
+
+.fileInput {
+  display: none;
+}
+
+.status {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.035);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.status span {
+  color: #a14c25;
+}
+
+.formGrid {
+  display: grid;
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 13px;
+  color: var(--ink);
+  outline: none;
+}
+
+.field input:focus {
+  border-color: #111111;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.07);
+}
+
+@media (max-width: 900px) {
+  .shell {
+    width: min(100% - 24px, 680px);
+    padding-top: 26px;
+  }
+
+  .hero,
+  .workspace {
+    display: grid;
+  }
+
+  .hero {
+    align-items: start;
+  }
+
+  .hero h1 {
+    font-size: 38px;
+    line-height: 1.02;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .editor {
+    position: static;
+    order: -1;
+  }
+
+  .uploadButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .shell {
+    width: min(100% - 18px, 420px);
+    padding-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: 32px;
+  }
+
+  .previewPanel,
+  .editor {
+    padding: 12px;
+  }
+
+  .editorHeader {
+    display: grid;
+  }
+
+  .downloadButton {
+    width: 100%;
+  }
+}
