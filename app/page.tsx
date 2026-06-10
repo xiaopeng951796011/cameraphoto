@@ -12,6 +12,7 @@ type FrameText = {
   aperture: string;
   shutter: string;
   iso: string;
+  date: string;
 };
 
 const emptyText: FrameText = {
@@ -21,7 +22,8 @@ const emptyText: FrameText = {
   focal: "35mm",
   aperture: "f/1.4",
   shutter: "1/250s",
-  iso: "ISO 200"
+  iso: "ISO 200",
+  date: "2026.06.10"
 };
 
 const textFields: Array<{ key: keyof FrameText; label: string }> = [
@@ -31,7 +33,8 @@ const textFields: Array<{ key: keyof FrameText; label: string }> = [
   { key: "focal", label: "焦距" },
   { key: "aperture", label: "光圈" },
   { key: "shutter", label: "快门" },
-  { key: "iso", label: "ISO" }
+  { key: "iso", label: "ISO" },
+  { key: "date", label: "日期" }
 ];
 
 function formatFocal(value: unknown) {
@@ -54,6 +57,20 @@ function formatShutter(value: unknown) {
   if (!shutter) return "";
   if (shutter >= 1) return `${trimNumber(shutter)}s`;
   return `1/${Math.round(1 / shutter)}s`;
+}
+
+function formatDate(value: unknown) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, "0"),
+      String(value.getDate()).padStart(2, "0")
+    ].join(".");
+  }
+
+  const raw = clean(value);
+  const match = raw.match(/^(\d{4})[:.-](\d{2})[:.-](\d{2})/);
+  return match ? `${match[1]}.${match[2]}.${match[3]}` : "";
 }
 
 function numericExifValue(value: unknown) {
@@ -141,7 +158,8 @@ function getExifText(tags: Record<string, unknown>): FrameText {
     focal: getDisplayFocal(tags) || emptyText.focal,
     aperture: formatAperture(tags.FNumber) || formatAperture(tags.ApertureValue) || emptyText.aperture,
     shutter: formatShutter(tags.ExposureTime) || formatShutter(tags.ShutterSpeedValue) || emptyText.shutter,
-    iso: formatIso(tags.ISO) || formatIso(tags.PhotographicSensitivity) || emptyText.iso
+    iso: formatIso(tags.ISO) || formatIso(tags.PhotographicSensitivity) || emptyText.iso,
+    date: formatDate(tags.DateTimeOriginal) || formatDate(tags.CreateDate) || formatDate(tags.ModifyDate) || emptyText.date
   };
 }
 
@@ -185,6 +203,15 @@ function fitTextToWidth(
   return { text: `${trimmed}${ellipsis}`, fontSize: nextFontSize };
 }
 
+function getBrandDotColor(maker: string) {
+  const brand = maker.toLowerCase();
+  if (brand.includes("leica")) return "#111111";
+  if (brand.includes("sony")) return "#3f3f3f";
+  if (brand.includes("canon")) return "#b8b8b8";
+  if (brand.includes("fujifilm") || brand.includes("fuji")) return "#777777";
+  return "#555555";
+}
+
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -193,9 +220,10 @@ export default function Home() {
   const [frameText, setFrameText] = useState<FrameText>(emptyText);
   const [isReading, setIsReading] = useState(false);
   const [error, setError] = useState("");
+  const [imageVersion, setImageVersion] = useState(0);
 
   const detailsLine = useMemo(
-    () => [frameText.focal, frameText.aperture, frameText.shutter, frameText.iso].filter(Boolean).join("   "),
+    () => [frameText.focal, frameText.aperture, frameText.shutter, frameText.iso].filter(Boolean).join(" · "),
     [frameText]
   );
 
@@ -210,8 +238,8 @@ export default function Home() {
     const imageAreaWidth = 1460;
     const outerPadding = 170;
     const photoTop = 150;
-    const captionTopGap = 78;
-    const captionHeight = 170;
+    const captionTopGap = 70;
+    const captionHeight = 210;
 
     const imageAspect = image ? image.naturalHeight / image.naturalWidth : 0.72;
     const imageAreaHeight = Math.round(imageAreaWidth * Math.min(Math.max(imageAspect, 0.56), 1.32));
@@ -258,10 +286,7 @@ export default function Home() {
       }
       ctx.drawImage(image, sx, sy, sw, sh, photoX, photoY, photoW, photoH);
     } else {
-      const gradient = ctx.createLinearGradient(photoX, photoY, photoX + photoW, photoY + photoH);
-      gradient.addColorStop(0, "#eeeeeb");
-      gradient.addColorStop(1, "#dadad6");
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = "#ededeb";
       ctx.fillRect(photoX, photoY, photoW, photoH);
       ctx.fillStyle = "#8a8a84";
       ctx.font = "500 48px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial";
@@ -277,11 +302,11 @@ export default function Home() {
 
     ctx.fillStyle = "#111111";
     ctx.textBaseline = "middle";
-    const iconRadius = 26;
-    const iconGap = 22;
+    const iconRadius = 10;
+    const iconGap = 18;
     const maxTitleGroupWidth = exportWidth * 0.7;
     const maxTextWidth = maxTitleGroupWidth - iconRadius * 2 - iconGap;
-    const fittedTitle = fitTextToWidth(ctx, title, maxTextWidth, 600, 38, 28);
+    const fittedTitle = fitTextToWidth(ctx, title, maxTextWidth, 600, 42, 32);
     const textWidth = ctx.measureText(fittedTitle.text).width;
     const titleGroupWidth = iconRadius * 2 + iconGap + textWidth;
     const titleGroupX = centerX - titleGroupWidth / 2;
@@ -289,21 +314,22 @@ export default function Home() {
     const iconY = captionY + 36;
     ctx.beginPath();
     ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2);
+    ctx.fillStyle = getBrandDotColor(frameText.maker);
     ctx.fill();
-    ctx.fillStyle = "#fbfbfa";
-    ctx.font = "700 13px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(brand.slice(0, 5), iconX, iconY + 1);
 
     ctx.fillStyle = "#111111";
     ctx.font = `600 ${fittedTitle.fontSize}px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial`;
     ctx.textAlign = "left";
     ctx.fillText(fittedTitle.text, titleGroupX + iconRadius * 2 + iconGap, iconY + 1);
 
-    ctx.font = "400 30px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial";
+    ctx.font = "500 30px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial";
     ctx.fillStyle = "#666666";
     ctx.textAlign = "center";
-    ctx.fillText(detailsLine, centerX, captionY + 104);
+    ctx.fillText(detailsLine, centerX, captionY + 92);
+
+    ctx.font = "400 28px -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial";
+    ctx.fillStyle = "#999999";
+    ctx.fillText(frameText.date, centerX, captionY + 140);
   }, [detailsLine, frameText, image]);
 
   useEffect(() => {
@@ -322,6 +348,7 @@ export default function Home() {
     const nextImage = new Image();
     nextImage.onload = () => {
       setImage(nextImage);
+      setImageVersion((current) => current + 1);
       URL.revokeObjectURL(objectUrl);
     };
     nextImage.onerror = () => {
@@ -379,8 +406,8 @@ export default function Home() {
     <main className={styles.shell}>
       <section className={styles.hero}>
         <div>
-          <p className={styles.kicker}>EXIF Photo Frame</p>
-          <h1>把照片变成干净高级的摄影相框图</h1>
+          <h1>PHOTO FRAME</h1>
+          <p className={styles.subtitle}>Create clean and professional photography presentation frames.</p>
         </div>
         <button className={styles.uploadButton} onClick={() => fileInputRef.current?.click()}>
           上传照片
@@ -390,7 +417,7 @@ export default function Home() {
 
       <section className={styles.workspace}>
         <div className={styles.previewPanel}>
-          <canvas ref={canvasRef} className={styles.canvas} aria-label="摄影相框预览" />
+          <canvas key={imageVersion} ref={canvasRef} className={styles.canvas} aria-label="摄影相框预览" />
         </div>
 
         <aside className={styles.editor}>

@@ -1,9 +1,9 @@
 :root {
   --ink: #111111;
-  --muted: #727272;
-  --hairline: #e8e8e8;
-  --paper: #fbfbfa;
-  --panel: rgba(255, 255, 255, 0.78);
+  --muted: #777777;
+  --hairline: #e5e5e5;
+  --paper: #f8f8f6;
+  --panel: #ffffff;
 }
 
 * {
@@ -17,9 +17,7 @@ body {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.95), transparent 34rem),
-    linear-gradient(180deg, #f6f6f4 0%, #ededeb 100%);
+  background: #f8f8f6;
   color: var(--ink);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
 }
