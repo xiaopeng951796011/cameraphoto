@@ -78,7 +78,7 @@ function getExifText(tags: Record<string, unknown>): FrameText {
     maker: clean(tags.Make) || emptyText.maker,
     model: clean(tags.Model) || emptyText.model,
     lens: clean(tags.LensModel) || clean(tags.Lens) || emptyText.lens,
-    focal: formatFocal(tags.FocalLength) || emptyText.focal,
+    focal: formatFocal(tags.FocalLengthIn35mmFilm) || formatFocal(tags.FocalLength) || emptyText.focal,
     aperture: formatAperture(tags.FNumber) || formatAperture(tags.ApertureValue) || emptyText.aperture,
     shutter: formatShutter(tags.ExposureTime) || formatShutter(tags.ShutterSpeedValue) || emptyText.shutter,
     iso: formatIso(tags.ISO) || formatIso(tags.PhotographicSensitivity) || emptyText.iso
