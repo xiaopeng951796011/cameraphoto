@@ -73,12 +73,72 @@ function clean(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function exifText(value: unknown) {
+  if (Array.isArray(value)) return value.map((item) => clean(item) || String(item)).join(" ");
+  if (typeof value === "number") return String(value);
+  return clean(value);
+}
+
+function includesAny(value: string, needles: string[]) {
+  return needles.some((needle) => value.includes(needle));
+}
+
+function isIphonePhoto(tags: Record<string, unknown>) {
+  const make = exifText(tags.Make).toLowerCase();
+  const model = exifText(tags.Model).toLowerCase();
+  return make.includes("apple") || model.includes("iphone");
+}
+
+function inferIphoneFocal(tags: Record<string, unknown>) {
+  if (!isIphonePhoto(tags)) return "";
+
+  const focal = numericExifValue(tags.FocalLength);
+  const zoom = numericExifValue(tags.DigitalZoomRatio);
+  const lens = `${exifText(tags.LensModel)} ${exifText(tags.LensSpecification)}`.toLowerCase();
+  const model = exifText(tags.Model).toLowerCase();
+
+  if (zoom >= 1.7 && zoom < 2.5) return "48mm";
+  if (zoom >= 2.5 && zoom < 4.5) return "77mm";
+  if (zoom >= 4.5) return "120mm";
+
+  if (includesAny(lens, ["ultra", "超广角"])) return "13mm";
+  if (includesAny(lens, ["tele", "长焦", "tetraprism", "periscope", "5x", "120mm"])) {
+    if (includesAny(model, ["15 pro max", "16 pro", "16 pro max"]) || includesAny(lens, ["5x", "120mm"])) {
+      return "120mm";
+    }
+    return "77mm";
+  }
+
+  if (focal >= 1.3 && focal <= 2.8) return "13mm";
+
+  if (focal >= 4.5 && focal <= 7.4) {
+    return includesAny(model, ["14 pro", "15 pro", "16 pro", "iphone 15", "iphone 16"]) ? "24mm" : "26mm";
+  }
+
+  if (focal >= 8 && focal <= 12) {
+    if (includesAny(model, ["15 pro max", "16 pro", "16 pro max"])) return "120mm";
+    if (includesAny(lens, ["main", "wide", "48mm", "2x"])) return "48mm";
+    return "77mm";
+  }
+
+  return "";
+}
+
+function getDisplayFocal(tags: Record<string, unknown>) {
+  return (
+    formatFocal(tags.FocalLengthIn35mmFilm) ||
+    formatFocal(tags.FocalLengthIn35mmFormat) ||
+    inferIphoneFocal(tags) ||
+    formatFocal(tags.FocalLength)
+  );
+}
+
 function getExifText(tags: Record<string, unknown>): FrameText {
   return {
     maker: clean(tags.Make) || emptyText.maker,
     model: clean(tags.Model) || emptyText.model,
     lens: clean(tags.LensModel) || clean(tags.Lens) || emptyText.lens,
-    focal: formatFocal(tags.FocalLengthIn35mmFilm) || formatFocal(tags.FocalLength) || emptyText.focal,
+    focal: getDisplayFocal(tags) || emptyText.focal,
     aperture: formatAperture(tags.FNumber) || formatAperture(tags.ApertureValue) || emptyText.aperture,
     shutter: formatShutter(tags.ExposureTime) || formatShutter(tags.ShutterSpeedValue) || emptyText.shutter,
     iso: formatIso(tags.ISO) || formatIso(tags.PhotographicSensitivity) || emptyText.iso
@@ -279,7 +339,20 @@ export default function Home() {
         xmp: false,
         icc: false
       });
-      if (tags) setFrameText(getExifText(tags as Record<string, unknown>));
+      if (tags) {
+        console.log("EXIF tags", tags);
+        console.log("EXIF focal debug", {
+          FocalLength: tags.FocalLength,
+          FocalLengthIn35mmFilm: tags.FocalLengthIn35mmFilm,
+          FocalLengthIn35mmFormat: (tags as Record<string, unknown>).FocalLengthIn35mmFormat,
+          LensModel: tags.LensModel,
+          LensSpecification: tags.LensSpecification,
+          DigitalZoomRatio: tags.DigitalZoomRatio,
+          Make: tags.Make,
+          Model: tags.Model
+        });
+        setFrameText(getExifText(tags as Record<string, unknown>));
+      }
     } catch {
       setError("没有读到完整 EXIF，已保留可手动修改的默认文字。");
     } finally {
